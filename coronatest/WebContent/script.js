@@ -12,6 +12,23 @@ var url1 = "https://api.coronatracker.com/v3/stats/worldometer/global"
 var url = "https://api.coronatracker.com/v3/stats/worldometer/country";
 var global = '';
 var allcountries = '';
+
+var currentTime = new Date();
+var currentTime1 = new Date();
+var pd = currentTime.getDate(currentTime.setDate(currentTime.getDate()-14));
+var pm = currentTime.getMonth(currentTime.setDate(currentTime.getDate()-0))+1;
+var py = currentTime.getFullYear(currentTime.setDate(currentTime.getDate()-0));
+
+var cd = currentTime1.getDate();
+var cm = currentTime1.getMonth()+1;
+var cy = currentTime1.getFullYear();
+
+if(cm<=9) cm = "0"+cm;
+if(pm<=9) pm = "0"+pm;
+if(cd<=9) cd = "0"+cd;
+if(pd<=9) pd = "0"+pd;
+
+
 $.getJSON(url1,function(data){
         global=data;
         document.getElementById("spinner-border").style.display="none";
@@ -28,6 +45,7 @@ $.getJSON(url1,function(data){
         var fatalityrate = global.totalDeaths * 100 / global.totalConfirmed;
         document.getElementById("fatalityRate").innerHTML='<div class="fatalityprogressbar"><div class="circle1" id="circle1"><div></div></div></div>';
         progressbar(fatalityrate,'.fatalityprogressbar','.circle1','circle1','#fb4f14');
+        pie();
 });
 
 $.getJSON(url,function(data){
@@ -72,13 +90,17 @@ function table(data)
         tcp = tcp.toPrecision(2);
         document.getElementById("totalCritical").innerHTML='<h5>Critical Cases</h5><h2>'+tc+'</h2><p style="color:red;">'+tcp+'% of total cases</p>';
         document.getElementById("totalConfirmedPerMillionPopulation").innerHTML='<h5>Total Confirmed</h5><h2>'+global.totalCasesPerMillionPop+'</h2><p style="color:red;">Per Million Population</p>';
+        
+        var param = {limit:9};
+        news(param);
 }
 
 
 var search = document.getElementById("search");
-search.addEventListener("click",function(){
+search.addEventListener("submit",function(e){
     var input = document.getElementById("Country").value;
     Search(input);    
+    e.preventDefault();
 });
 
 function Search(input){
@@ -115,6 +137,10 @@ function Search(input){
     
         document.getElementById("totalCritical").innerHTML='<h5>Critical Cases</h5><h2>'+tc+'</h2><p style="color:red;">'+tcp+'% of total cases</p>';
         document.getElementById("totalConfirmedPerMillionPopulation").innerHTML='<h5>Total Confirmed</h5><h2>'+global.totalCasesPerMillionPop+'</h2><p style="color:red;">Per Million Population</p>';
+        
+        var param = {limit:9};
+        news(param);
+        pie();
     } 
     else{
         var i =document.createElement("i");  
@@ -144,16 +170,127 @@ function Search(input){
         cp = cp.toPrecision(2);
         document.getElementById("totalCritical").innerHTML='<h5>Critical Cases</h5><h2>'+arr[0].totalCritical+'</h2><p style="color:red;">'+cp+'% of total cases</p>';
         document.getElementById("totalConfirmedPerMillionPopulation").innerHTML='<h5>Total Confirmed</h5><h2>'+arr[0].totalConfirmedPerMillionPopulation+'</h2><p style="color:red;">Per Million Population</p>';
+    
+    var param = {limit:9,country:arr[0].country,countryCode:arr[0].countryCode};
+    news(param);
+    var param1 = {countryCode:arr[0].countryCode,startDate:py+"-"+pm+"-"+pd,endDate:cy+"-"+cm+"-"+cd};
+    charts(param1);
+
     }
 };
 
 
+function news(param){
+    var newsurl = "https://api.coronatracker.com/news/trending?"+$.param(param);
+    document.getElementById("newsrow").innerHTML="";    
+    $.getJSON(newsurl,function(data){
+    console.log(data);
+    data.items.forEach(function(event){
+        // var a = document.createElement("a");
+        
+        var divv1 = document.createElement("a");
+        divv1.setAttribute("href",event.url);
+        divv1.classList.add("row");
+        divv1.setAttribute("data-aos","fade-up");
+        divv1.style.padding="10px"
+        divv1.style.border="1px solid grey";
+        divv1.style.textDecoration = "none";
+        divv1.style.color="grey";
+        divv1.style.boxShadow="10px 10px 8px -6px #888888";
 
+        
+        var divv11 = document.createElement("div");
+        divv11.classList.add("col-md-4");
+        
+        var divv12 = document.createElement("div");
+        divv12.classList.add("col-md-8");
+        
+        var img = document.createElement("img");
+        img.setAttribute("src",event.urlToImage);
+        img.classList.add("newsimg");
+        
+        divv11.appendChild(img);
+        divv12.innerHTML = '<h2>'+event.title+'</h2><h5>'+event.description+'</h5>';
+        divv1.appendChild(divv11);
+        divv1.appendChild(divv12);
+        // divv1.appendChild(a);
+        document.getElementById("newsrow").appendChild(divv1);
+    });
+        console.log(document.getElementById("newsrow"));
 
+});
+}
 
+function charts(param1){
+    var charturl = "https://api.coronatracker.com/v5/analytics/trend/country?"+$.param(param1);
+    var tconfirmed=[];
+    var tdeath=[];
+    var trecovered=[];
+    var dates=[];
+    $.getJSON(charturl,function(data){
+        console.log(data);
+        data.forEach(function(event){
+            var d = event.last_updated.slice(0, 10);
+            dates.push(d);
+            tconfirmed.push(parseInt(event.total_confirmed));
+            tdeath.push(event.total_deaths);
+            trecovered.push(event.total_recovered);
+        });
+        printchart(dates,tconfirmed,tdeath,trecovered);
+    });
+}
 
+function printchart(dates,tconfirmed,tdeath,trecovered){
+    var chart = document.getElementById("lineChart");
+    
+    document.getElementById('piechart').style.display="none";
+    document.getElementById('lineChart').style.display="block";
+    // chart.innerHTML="";
+    let lineChart = new Chart(chart,{
+        type:'bar',
+        data: {
+        labels: dates,
+        datasets: [
+            {
+            label: "Confirmed",
+            backgroundColor: "blue",
+            data: tconfirmed,
+        },
+        {
+            label: "Death",
+            backgroundColor: "red",
+            data: tdeath,
+        },
+        {
+            label: "Recovered",
+            backgroundColor: "green",
+            data: trecovered
+        }
+        ]
+    }    
 
+    });
+}
 
+function pie()
+{
+    document.getElementById('piechart').style.display="block";
+    document.getElementById('lineChart').style.display="none";
+    google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+
+        var data = google.visualization.arrayToDataTable([
+          ['Task', 'Hours per Day'],
+          ['Confirmed', global.totalConfirmed],
+          ['Deaths',  global.totalDeaths],
+          ['Recovered', global.totalRecovered],
+        ]);
+        var chart1 = new google.visualization.PieChart(document.getElementById('piechart'));
+        chart1.draw(data);
+      }
+}
 
 function progressbar(percentagee,classes,ids,id,c){
     var percent = document.getElementById(id);

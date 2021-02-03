@@ -24,13 +24,13 @@ button{
 .carousel{
     background: #2f4357;
     margin-top: 55px;
-    max-height:350px;
+    max-height:300px;
     box-shadow: 2px 8px 6px -6px black;
 }
 .carousel-item img{
     text-align: center;
-    min-height:350px;
-    max-height:350px; 
+    min-height:300px;
+    max-height:300px; 
 }
 #confirmedcases,#newconfirmedcases{
     background: #fff5f5;
@@ -93,7 +93,7 @@ tbody, thead {
     display: block; 
 }                
 tbody {   
-    height: 670px;  
+    height: 950px;  
     overflow-y: auto; 
     border-top: 2px solid white; 
 }  
@@ -114,4 +114,21 @@ iframe{
     width:100%;
     box-shadow: 10px 10px 8px -6px #888888;
 
+}
+#lineChart{
+    display: none;
+}
+.newsimg{
+    height: 100%;
+    width: 100%; 
+    margin: auto;
+}
+.footer {
+   /* position: fixed; */
+   left: 0;
+   bottom: 0;
+   width: 100%;
+   background-color: blueviolet;
+   color: white;
+   text-align: center;
 }
